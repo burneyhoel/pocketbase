@@ -16,7 +16,7 @@ type (
 	Client struct {
 		client     *resty.Client
 		url        string
-		authorizer authStore
+		authorizer authorizer
 	}
 	ClientOption func(*Client)
 )
@@ -55,18 +55,6 @@ func WithAdminEmailPassword(email, password string) ClientOption {
 func WithUserEmailPassword(email, password string) ClientOption {
 	return func(c *Client) {
 		c.authorizer = newAuthorizeEmailPassword(c.client, c.url+"/api/collections/users/auth-with-password", email, password)
-	}
-}
-
-func WithAdminToken(token string) ClientOption {
-	return func(c *Client) {
-		c.authorizer = newAuthorizeToken(c.client, c.url+"/api/admins/auth-refresh", token)
-	}
-}
-
-func WithUserToken(token string) ClientOption {
-	return func(c *Client) {
-		c.authorizer = newAuthorizeToken(c.client, c.url+"/api/collections/users/auth-refresh", token)
 	}
 }
 
@@ -155,11 +143,11 @@ func (c *Client) Delete(collection string, id string) error {
 	return nil
 }
 
-func (c *Client) List(collection string, params ParamsList) (ResponseList[map[string]any], error) {
+func (c *Client) List(collection string, params ParamsList) (ResponseList[map[string]any], error, *resty.Response) {
 	var response ResponseList[map[string]any]
 
 	if err := c.Authorize(); err != nil {
-		return response, err
+		return response, err, nil
 	}
 
 	request := c.client.R().
@@ -178,10 +166,15 @@ func (c *Client) List(collection string, params ParamsList) (ResponseList[map[st
 	if params.Sort != "" {
 		request.SetQueryParam("sort", params.Sort)
 	}
-
+	if params.Expand != "" {
+		request.SetQueryParam("expand", params.Expand)
+	}
+	if params.Fields != "" {
+		request.SetQueryParam("fields", params.Fields)
+	}
 	resp, err := request.Get(c.url + "/api/collections/{collection}/records")
 	if err != nil {
-		return response, fmt.Errorf("[list] can't send update request to pocketbase, err %w", err)
+		return response, fmt.Errorf("[list] can't send update request to pocketbase, err %w", err), resp
 	}
 
 	if resp.IsError() {
@@ -189,7 +182,7 @@ func (c *Client) List(collection string, params ParamsList) (ResponseList[map[st
 			resp.StatusCode(),
 			resp.String(),
 			ErrInvalidResponse,
-		)
+		), resp
 	}
 
 	var responseRef any = &response
@@ -197,11 +190,7 @@ func (c *Client) List(collection string, params ParamsList) (ResponseList[map[st
 		responseRef = params.hackResponseRef
 	}
 	if err := json.Unmarshal(resp.Body(), responseRef); err != nil {
-		return response, fmt.Errorf("[list] can't unmarshal response, err %w", err)
+		return response, fmt.Errorf("[list] can't unmarshal response, err %w", err), resp
 	}
-	return response, nil
-}
-
-func (c *Client) AuthStore() authStore {
-	return c.authorizer
+	return response, nil, resp
 }

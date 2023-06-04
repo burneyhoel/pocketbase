@@ -89,7 +89,7 @@ func TestListAccess(t *testing.T) {
 			} else if tt.user.email != "" {
 				c = NewClient(defaultURL, WithUserEmailPassword(tt.user.email, tt.user.password))
 			}
-			r, err := c.List(tt.collection, ParamsList{})
+			r, err, _ := c.List(tt.collection, ParamsList{})
 			assert.Equal(t, tt.wantErr, err != nil, err)
 			assert.Equal(t, tt.wantResult, r.TotalItems > 0)
 		})
@@ -257,7 +257,7 @@ func TestClient_List(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.client.List(tt.collection, tt.params)
+			got, err, _ := tt.client.List(tt.collection, tt.params)
 			assert.Equal(t, tt.wantErr, err != nil, err)
 			assert.Equal(t, tt.wantResult, got.TotalItems > 0)
 		})
@@ -280,7 +280,7 @@ func TestClient_Delete(t *testing.T) {
 	assert.NotEmpty(t, resultCreated.ID)
 
 	// confirm item exists
-	resultList, err := client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
+	resultList, err, _ := client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
 	assert.NoError(t, err)
 	assert.Len(t, resultList.Items, 1)
 
@@ -289,7 +289,7 @@ func TestClient_Delete(t *testing.T) {
 	assert.NoError(t, err)
 
 	// confirm item does not exist
-	resultList, err = client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
+	resultList, err, _ = client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
 	assert.NoError(t, err)
 	assert.Len(t, resultList.Items, 0)
 }
@@ -312,7 +312,7 @@ func TestClient_Update(t *testing.T) {
 	assert.NotEmpty(t, resultCreated.ID)
 
 	// confirm item exists
-	resultList, err := client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
+	resultList, err, _ := client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
 	assert.NoError(t, err)
 	require.Len(t, resultList.Items, 1)
 	assert.Equal(t, field, resultList.Items[0]["field"])
@@ -324,7 +324,7 @@ func TestClient_Update(t *testing.T) {
 	assert.NoError(t, err)
 
 	// confirm changes
-	resultList, err = client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
+	resultList, err, _ = client.List(migrations.PostsPublic, ParamsList{Filters: "id='" + resultCreated.ID + "'"})
 	assert.NoError(t, err)
 	require.Len(t, resultList.Items, 1)
 	assert.Equal(t, field+"_updated", resultList.Items[0]["field"])

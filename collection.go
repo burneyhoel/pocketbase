@@ -30,7 +30,7 @@ func (c Collection[T]) List(params ParamsList) (ResponseList[T], error) {
 	var response ResponseList[T]
 	params.hackResponseRef = &response
 
-	_, err := c.Client.List(c.Name, params)
+	_, err, _ := c.Client.List(c.Name, params)
 	return response, err
 }
 
