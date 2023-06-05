@@ -5,6 +5,8 @@ type ParamsList struct {
 	Size    int
 	Filters string
 	Sort    string
+	Expand  string
+	Fields  string
 
 	hackResponseRef any //hack for collection list
 }
